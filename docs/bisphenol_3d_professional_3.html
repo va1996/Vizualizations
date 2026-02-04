@@ -1,0 +1,1220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive 3D Bisphenol Angles</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            color: #2c3e50;
+            overflow-x: hidden;
+        }
+        
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 30px 20px;
+        }
+        
+        /* Header */
+        h1 {
+            text-align: center;
+            color: white;
+            font-size: 2.8em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 8px rgba(0,0,0,0.3);
+            font-weight: 600;
+        }
+        
+        .subtitle {
+            text-align: center;
+            color: rgba(255,255,255,0.9);
+            font-size: 1.2em;
+            margin-bottom: 40px;
+            font-weight: 300;
+        }
+        
+        /* Control Panel */
+        .controls {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            margin-bottom: 25px;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.12);
+        }
+        
+        .control-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+        }
+        
+        .control-group {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #2a5298;
+        }
+        
+        .control-group label {
+            display: block;
+            font-weight: 600;
+            color: #1e3c72;
+            margin-bottom: 10px;
+            font-size: 1.05em;
+        }
+        
+        select, button {
+            width: 100%;
+            padding: 12px;
+            font-size: 1em;
+            border: 2px solid #e0e0e0;
+            border-radius: 6px;
+            background: white;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-family: inherit;
+        }
+        
+        select:hover, select:focus {
+            border-color: #2a5298;
+            outline: none;
+        }
+        
+        button {
+            background: #2a5298;
+            color: white;
+            border: none;
+            font-weight: 600;
+        }
+        
+        button:hover {
+            background: #1e3c72;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(42, 82, 152, 0.3);
+        }
+        
+        /* Viewer Container */
+        .viewer-container {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.12);
+            margin-bottom: 25px;
+        }
+        
+        .viewer-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 25px;
+        }
+        
+        .viewer-box {
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            overflow: hidden;
+            background: #000;
+            position: relative;
+        }
+        
+        .viewer-label {
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            background: rgba(255,255,255,0.95);
+            padding: 10px 18px;
+            border-radius: 8px;
+            font-weight: 600;
+            color: #1e3c72;
+            z-index: 10;
+            font-size: 1.1em;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .angle-info {
+            position: absolute;
+            bottom: 15px;
+            left: 15px;
+            right: 15px;
+            background: rgba(255,255,255,0.95);
+            padding: 15px;
+            border-radius: 8px;
+            z-index: 10;
+            font-size: 0.95em;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .angle-info div {
+            margin: 6px 0;
+        }
+        
+        .angle-value {
+            font-weight: 700;
+            color: #2a5298;
+            font-size: 1.05em;
+        }
+        
+        canvas {
+            display: block;
+            width: 100% !important;
+            height: 500px !important;
+        }
+        
+        /* Info Panel */
+        .info-panel {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.12);
+            margin-bottom: 25px;
+        }
+        
+        .info-title {
+            font-size: 1.6em;
+            color: #1e3c72;
+            margin-bottom: 20px;
+            font-weight: 600;
+            border-bottom: 3px solid #2a5298;
+            padding-bottom: 10px;
+        }
+        
+        .info-content {
+            line-height: 1.8;
+            color: #555;
+        }
+        
+        /* Legend */
+        .legend {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 15px;
+            margin: 25px 0;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border-left: 3px solid #2a5298;
+        }
+        
+        .legend-color {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            border: 2px solid #333;
+            flex-shrink: 0;
+        }
+        
+        .help-text {
+            background: #e3f2fd;
+            border-left: 4px solid #2196f3;
+            padding: 18px;
+            margin: 25px 0;
+            border-radius: 8px;
+            font-size: 0.95em;
+            line-height: 1.7;
+        }
+        
+        /* Table Styles */
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 25px 0;
+            box-shadow: 0 2px 15px rgba(0,0,0,0.08);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        
+        .data-table thead {
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            color: white;
+        }
+        
+        .data-table th {
+            padding: 18px 15px;
+            text-align: left;
+            font-weight: 600;
+            font-size: 0.95em;
+            letter-spacing: 0.5px;
+        }
+        
+        .data-table th:not(:first-child) {
+            text-align: center;
+        }
+        
+        .data-table td {
+            padding: 18px 15px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        
+        .data-table tbody tr:hover {
+            background: #f8f9fa;
+        }
+        
+        .compound-name {
+            font-weight: 600;
+            font-size: 1.05em;
+        }
+        
+        .compound-full {
+            color: #666;
+            font-size: 0.85em;
+            margin-top: 3px;
+        }
+        
+        /* Trend Box */
+        .trend-box {
+            background: #f8f9fa;
+            border-left: 4px solid #2a5298;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 25px 0;
+        }
+        
+        .trend-item {
+            margin: 15px 0;
+            line-height: 1.7;
+        }
+        
+        .trend-value {
+            font-family: 'Courier New', monospace;
+            background: white;
+            padding: 4px 10px;
+            border-radius: 4px;
+            display: inline-block;
+            margin: 5px 0;
+            border: 1px solid #e0e0e0;
+        }
+        
+        /* Key Insight Box */
+        .insight-box {
+            background: #e8f5e9;
+            border-left: 4px solid #4caf50;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 25px 0;
+        }
+        
+        /* References */
+        .references {
+            background: #1e3c72;
+            color: white;
+            border-radius: 12px;
+            padding: 35px;
+            margin: 25px 0;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.15);
+        }
+        
+        .references h2 {
+            font-size: 1.6em;
+            margin-bottom: 25px;
+            font-weight: 600;
+            color: #fff;
+            border-bottom: 3px solid #2a5298;
+            padding-bottom: 10px;
+        }
+        
+        .reference-item {
+            margin: 20px 0;
+            padding-left: 20px;
+            text-indent: -20px;
+            line-height: 1.9;
+            color: #ecf0f1;
+        }
+        
+        .reference-item a {
+            color: #64b5f6;
+            text-decoration: none;
+            font-weight: 600;
+            transition: color 0.3s;
+        }
+        
+        .reference-item a:hover {
+            color: #90caf9;
+            text-decoration: underline;
+        }
+        
+        .data-source {
+            margin-top: 25px;
+            padding: 18px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 8px;
+            border-left: 3px solid #64b5f6;
+            font-size: 0.9em;
+            color: #bdc3c7;
+        }
+        
+        /* Responsive */
+        @media (max-width: 968px) {
+            .viewer-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            h1 {
+                font-size: 2em;
+            }
+            
+            .data-table {
+                font-size: 0.9em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔬 Interactive 3D Bisphenol Molecular Structures</h1>
+        <div class="subtitle">Explore structural angles and propeller geometries through interactive 3D visualization</div>
+        
+        <div class="controls">
+            <div class="control-row">
+                <div class="control-group">
+                    <label>Select Compound:</label>
+                    <select id="compoundSelect">
+                        <option value="BPT">BPT (Sulfur Bridge) - 104.21°</option>
+                        <option value="BPA" selected>BPA (Dimethyl Bridge) - 108.9°</option>
+                        <option value="BPF">BPF (Methylene Bridge) - 114.85°</option>
+                    </select>
+                </div>
+                
+                <div class="control-group">
+                    <label>Camera View:</label>
+                    <select id="viewSelect">
+                        <option value="perspective">Perspective View</option>
+                        <option value="side">Side View (Bridge Angle)</option>
+                        <option value="top">Top View (Pitch Angles)</option>
+                        <option value="front">Front View (Dihedral)</option>
+                    </select>
+                </div>
+                
+                <div class="control-group">
+                    <label>Visualization:</label>
+                    <button id="togglePlanes">Toggle Reference Planes</button>
+                </div>
+                
+                <div class="control-group">
+                    <label>Camera Control:</label>
+                    <button id="resetView">Reset Camera Position</button>
+                </div>
+            </div>
+        </div>
+        
+        <div class="viewer-container">
+            <div class="viewer-grid">
+                <div class="viewer-box">
+                    <div class="viewer-label">3D Molecular Structure</div>
+                    <div class="angle-info" id="leftInfo">
+                        <div><strong>Bond Length (C-X):</strong> <span class="angle-value" id="bondLengthValue">--</span></div>
+                        <div><strong>Bridge Angle:</strong> <span class="angle-value" id="bridgeAngleValue">--</span></div>
+                        <div><strong>Dihedral Angle φ:</strong> <span class="angle-value" id="dihedralAngleValue">--</span></div>
+                        <div><strong>Pitch Angles ψ:</strong> <span class="angle-value" id="pitchAngleValue">--</span></div>
+                    </div>
+                    <canvas id="mainCanvas"></canvas>
+                </div>
+                
+                <div class="viewer-box">
+                    <div class="viewer-label">Angle Visualization</div>
+                    <div class="angle-info">
+                        <div style="font-size: 0.9em; line-height: 1.6;">
+                            <strong style="color: #e74c3c;">Red Circle:</strong> Bridge angle at central atom<br>
+                            <strong style="color: #3498db;">Blue Circle:</strong> Dihedral angle between planes<br>
+                            <strong style="color: #2ecc71;">Green Circles:</strong> Pitch angles to reference plane
+                        </div>
+                    </div>
+                    <canvas id="angleCanvas"></canvas>
+                </div>
+            </div>
+        </div>
+        
+        <div class="info-panel">
+            <div class="info-title">🎨 Legend & Interactive Controls</div>
+            
+            <div class="legend">
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #3498db;"></div>
+                    <span><strong>Phenyl Rings</strong></span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #FFD700;"></div>
+                    <span><strong>S (Sulfur) - BPT</strong></span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #1a1a1a;"></div>
+                    <span><strong>C (Carbon) - BPA, BPF</strong></span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #95a5a6;"></div>
+                    <span><strong>CH₃ Groups (BPA)</strong></span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: rgba(30, 60, 114, 0.2); border-color: #2a5298;"></div>
+                    <span><strong>Reference Plane</strong></span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: rgba(52, 152, 219, 0.2); border-color: #3498db;"></div>
+                    <span><strong>Ring Planes</strong></span>
+                </div>
+            </div>
+            
+            <div class="help-text">
+                <strong>💡 How to use the interactive viewer:</strong><br>
+                • <strong>Left-click and drag</strong> on either canvas to rotate the 3D view<br>
+                • <strong>Scroll wheel</strong> to zoom in or out<br>
+                • <strong>Select different compounds</strong> from the dropdown to compare geometries<br>
+                • <strong>Change camera views</strong> to focus on specific structural features<br>
+                • <strong>Toggle planes</strong> to show or hide reference and ring planes
+            </div>
+        </div>
+        
+        <div class="info-panel">
+            <div class="info-title">📊 Complete Structural Parameters</div>
+            
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Compound</th>
+                        <th>Bridge Atom</th>
+                        <th>Bond Length (Å)</th>
+                        <th>Bridge Angle (°)</th>
+                        <th>Dihedral φ (°)</th>
+                        <th>Pitch ψ (°)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>
+                            <div class="compound-name"><span style="color: #e74c3c;">●</span> BPT</div>
+                            <div class="compound-full">Bis(4-hydroxyphenyl)sulfide</div>
+                        </td>
+                        <td style="text-align: center; font-size: 1.2em; font-weight: 600;">S</td>
+                        <td style="text-align: center; font-family: monospace; font-size: 1.05em;">1.773</td>
+                        <td style="text-align: center; font-family: monospace; font-size: 1.05em;">104.21</td>
+                        <td style="text-align: center; font-family: monospace; font-size: 1.05em;">67.24</td>
+                        <td style="text-align: center; font-family: monospace; font-size: 1.05em;">39.88, 41.51</td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <div class="compound-name"><span style="color: #f39c12;">●</span> BPA</div>
+                            <div class="compound-full">Bisphenol-A</div>
+                        </td>
+                        <td style="text-align: center; font-size: 1.2em; font-weight: 600;">C(CH₃)₂</td>
+                        <td style="text-align: center; font-family: monospace; font-size: 1.05em;">1.536</td>
+                        <td style="text-align: center; font-family: monospace; font-size: 1.05em;">108.9</td>
+                        <td style="text-align: center; font-family: monospace; font-size: 1.05em;">82.0</td>
+                        <td style="text-align: center; font-family: monospace; font-size: 1.05em;">53.0, 56.0</td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <div class="compound-name"><span style="color: #3498db;">●</span> BPF</div>
+                            <div class="compound-full">Bisphenol-F</div>
+                        </td>
+                        <td style="text-align: center; font-size: 1.2em; font-weight: 600;">CH₂</td>
+                        <td style="text-align: center; font-family: monospace; font-size: 1.05em;">1.517</td>
+                        <td style="text-align: center; font-family: monospace; font-size: 1.05em;">114.85</td>
+                        <td style="text-align: center; font-family: monospace; font-size: 1.05em;">71.43</td>
+                        <td style="text-align: center; font-family: monospace; font-size: 1.05em;">40.67, 45.67</td>
+                    </tr>
+                </tbody>
+            </table>
+            
+            <div class="trend-box">
+                <strong style="color: #1e3c72; font-size: 1.15em;">📈 Structural Trends Across the Series:</strong>
+                
+                <div class="trend-item">
+                    <strong style="color: #e74c3c;">Bond Length (C<sub>aryl</sub>-X):</strong><br>
+                    <span class="trend-value">S (1.773 Å) > C(CH₃)₂ (1.536 Å) > CH₂ (1.517 Å)</span><br>
+                    <small style="color: #666;">→ Decreases with atomic size of the bridging atom</small>
+                </div>
+                
+                <div class="trend-item">
+                    <strong style="color: #e74c3c;">Bridge Angle (C-X-C):</strong><br>
+                    <span class="trend-value">S (104.21°) < C(CH₃)₂ (108.9°) < CH₂ (114.85°)</span><br>
+                    <small style="color: #666;">→ Increases with smaller bridging atom (>14° range) due to steric repulsion between phenyl rings</small>
+                </div>
+                
+                <div class="trend-item">
+                    <strong style="color: #3498db;">Dihedral Angle φ:</strong><br>
+                    <span class="trend-value">S (67.24°) < CH₂ (71.43°) < C(CH₃)₂ (82.0°)</span><br>
+                    <small style="color: #666;">→ BPA shows largest values due to steric crowding from methyl substituents</small>
+                </div>
+                
+                <div class="trend-item">
+                    <strong style="color: #2ecc71;">Pitch Angles ψ:</strong><br>
+                    <span class="trend-value">S (39.88-41.51°) < CH₂ (40.67-45.67°) < C(CH₃)₂ (53.0-56.0°)</span><br>
+                    <small style="color: #666;">→ Smaller pitch angles = flatter propeller geometry (BPT), larger angles = steeper propeller (BPA)</small>
+                </div>
+            </div>
+            
+            <div class="insight-box">
+                <strong style="color: #2e7d32; font-size: 1.1em;">💡 Key Structural Insight</strong>
+                <p style="margin: 12px 0 0 0; color: #555; line-height: 1.7;">
+                    The pitch angles provide a superior description of the molecular "propeller shape" compared to the dihedral angle alone. 
+                    Two molecules can exhibit identical dihedral angles yet possess fundamentally different three-dimensional geometries 
+                    based on their individual pitch angle values. This geometric parameter is crucial for understanding 
+                    structure-activity relationships in bisphenol compounds.
+                </p>
+            </div>
+        </div>
+        
+        <div class="info-panel">
+            <div class="info-title">📐 Understanding the Three Angle Types</div>
+            
+            <div class="info-content">
+                <p style="margin: 15px 0;"><strong style="color: #e74c3c;">1. Bridge Angle (C<sub>aryl</sub>-X-C<sub>aryl</sub>):</strong><br>
+                The angle at the central bridging atom between the two aromatic rings. This fundamental parameter determines the spatial separation of the phenyl rings and directly influences the overall molecular geometry. Ranges from 104.21° (BPT) to 114.85° (BPF).</p>
+                
+                <p style="margin: 15px 0;"><strong style="color: #3498db;">2. Dihedral Angle φ:</strong><br>
+                The angle between the two planes formed by the phenyl rings. This measures how the rings are twisted relative to each other in three-dimensional space. Yields <strong>one value</strong> per molecule. Important for understanding overall molecular twist but insufficient alone for complete geometric description.</p>
+                
+                <p style="margin: 15px 0;"><strong style="color: #2ecc71;">3. Pitch Angles ψ:</strong><br>
+                The angle between each individual phenyl ring plane and the reference plane (defined by C<sub>aryl</sub>-X-C<sub>aryl</sub>). This provides a more precise description of the "propeller-like" molecular geometry. Yields <strong>two values</strong> per molecule (one for each ring), enabling detailed characterization of structural asymmetry and propeller steepness.</p>
+            </div>
+        </div>
+        
+        <!-- References Section at the Very Bottom -->
+        <div class="references">
+            <h2>📚 References</h2>
+            
+            <div class="reference-item">
+                Lim, C. F., & Tanski, J. M. (2007). Structural analysis of bisphenol-A and its methylene, sulfur, and oxygen bridged bisphenol analogs. <em>Journal of Chemical Crystallography</em>, <strong>37</strong>(9), 587–595. 
+                <a href="https://doi.org/10.1007/s10870-007-9207-8" target="_blank">https://doi.org/10.1007/s10870-007-9207-8</a>
+            </div>
+            
+            <div class="reference-item">
+                Srebny, V., Henneberger, L., König, M., Huchthausen, J., Braasch, J., & Escher, B. I. (2025). Beyond Estrogenicity: A Comparative Assessment of Bisphenol A and Its Alternatives in In Vitro Assays Questions Safety of Replacements. <em>Environmental Science & Technology</em>, <strong>59</strong>(33), 17457–17470. 
+                <a href="https://doi.org/10.1021/acs.est.5c07018" target="_blank">https://doi.org/10.1021/acs.est.5c07018</a>
+            </div>
+            
+            <div class="data-source">
+                <strong>Data Source:</strong> All structural parameters (bond lengths, bridge angles, dihedral angles, and pitch angles) are derived from the X-ray crystallographic analysis reported in Lim & Tanski (2007), conducted at 115 K.
+            </div>
+        </div>
+    </div>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script>
+        // Molecular data
+        const compounds = {
+            BPT: {
+                name: 'BPT (Bis(4-hydroxyphenyl)sulfide)',
+                bridgeAngle: 104.21,
+                bondLength: 1.773,
+                dihedralAngle: 67.24,
+                pitchAngles: [39.88, 41.51],
+                bridgeAtom: 'S',
+                bridgeColor: 0xFFD700,
+                color: '#e74c3c'
+            },
+            BPA: {
+                name: 'BPA (Bisphenol-A)',
+                bridgeAngle: 108.9,
+                bondLength: 1.536,
+                dihedralAngle: 82.0,
+                pitchAngles: [53.0, 56.0],
+                bridgeAtom: 'C',
+                bridgeColor: 0x1a1a1a,
+                hasMethyl: true,
+                color: '#f39c12'
+            },
+            BPF: {
+                name: 'BPF (Bisphenol-F)',
+                bridgeAngle: 114.85,
+                bondLength: 1.517,
+                dihedralAngle: 71.43,
+                pitchAngles: [40.67, 45.67],
+                bridgeAtom: 'C',
+                bridgeColor: 0x1a1a1a,
+                color: '#3498db'
+            }
+        };
+        
+        // Scene setup
+        let scene, camera, renderer, controls;
+        let sceneAngle, cameraAngle, rendererAngle;
+        let molecule, moleculeAngle;
+        let showPlanes = true;
+        let currentCompound = 'BPA';
+        
+        // Initialize main 3D viewer
+        function initMain() {
+            const canvas = document.getElementById('mainCanvas');
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x1a1a2e);
+            
+            camera = new THREE.PerspectiveCamera(50, canvas.clientWidth / canvas.clientHeight, 0.1, 1000);
+            camera.position.set(8, 5, 10);
+            
+            renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+            renderer.setSize(canvas.clientWidth, canvas.clientHeight);
+            
+            // Lighting
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+            scene.add(ambientLight);
+            
+            const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+            directionalLight.position.set(5, 10, 7.5);
+            scene.add(directionalLight);
+            
+            const directionalLight2 = new THREE.DirectionalLight(0xffffff, 0.4);
+            directionalLight2.position.set(-5, -10, -7.5);
+            scene.add(directionalLight2);
+            
+            // Grid removed for cleaner view
+            
+            // Create molecule
+            createMolecule(currentCompound);
+            
+            // Mouse controls
+            setupMouseControls(canvas, camera, scene);
+        }
+        
+        // Initialize angle visualization
+        function initAngle() {
+            const canvas = document.getElementById('angleCanvas');
+            sceneAngle = new THREE.Scene();
+            sceneAngle.background = new THREE.Color(0x1a1a2e);
+            
+            cameraAngle = new THREE.PerspectiveCamera(50, canvas.clientWidth / canvas.clientHeight, 0.1, 1000);
+            cameraAngle.position.set(8, 5, 10);
+            
+            rendererAngle = new THREE.WebGLRenderer({ canvas, antialias: true });
+            rendererAngle.setSize(canvas.clientWidth, canvas.clientHeight);
+            
+            // Lighting
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+            sceneAngle.add(ambientLight);
+            
+            const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+            directionalLight.position.set(5, 10, 7.5);
+            sceneAngle.add(directionalLight);
+            
+            // Create angle visualization
+            createAngleVisualization(currentCompound);
+            
+            // Mouse controls
+            setupMouseControls(canvas, cameraAngle, sceneAngle);
+        }
+        
+        // Mouse control setup
+        function setupMouseControls(canvas, cam, scn) {
+            let isDragging = false;
+            let previousMousePosition = { x: 0, y: 0 };
+            let rotationY = 0;
+            let rotationX = 0;
+            
+            canvas.addEventListener('mousedown', (e) => {
+                isDragging = true;
+                previousMousePosition = { x: e.clientX, y: e.clientY };
+            });
+            
+            canvas.addEventListener('mousemove', (e) => {
+                if (isDragging) {
+                    const deltaX = e.clientX - previousMousePosition.x;
+                    const deltaY = e.clientY - previousMousePosition.y;
+                    
+                    rotationY += deltaX * 0.01;
+                    rotationX += deltaY * 0.01;
+                    
+                    const radius = Math.sqrt(cam.position.x ** 2 + cam.position.z ** 2);
+                    cam.position.x = radius * Math.sin(rotationY);
+                    cam.position.z = radius * Math.cos(rotationY);
+                    cam.position.y = Math.max(1, cam.position.y + deltaY * 0.05);
+                    
+                    cam.lookAt(0, 0, 0);
+                    
+                    previousMousePosition = { x: e.clientX, y: e.clientY };
+                }
+            });
+            
+            canvas.addEventListener('mouseup', () => {
+                isDragging = false;
+            });
+            
+            canvas.addEventListener('mouseleave', () => {
+                isDragging = false;
+            });
+            
+            canvas.addEventListener('wheel', (e) => {
+                e.preventDefault();
+                const zoomSpeed = 0.1;
+                const direction = e.deltaY > 0 ? 1 : -1;
+                
+                cam.position.multiplyScalar(1 + direction * zoomSpeed);
+                cam.lookAt(0, 0, 0);
+            });
+        }
+        
+        // Create molecular structure - CORRECT geometry
+        function createMolecule(compoundKey) {
+            if (molecule) {
+                scene.remove(molecule);
+            }
+            
+            molecule = new THREE.Group();
+            const data = compounds[compoundKey];
+            
+            const bridgeAngleRad = data.bridgeAngle * Math.PI / 180;
+            const halfBridgeAngle = bridgeAngleRad / 2;
+            
+            // REAL BOND LENGTHS (in Angstroms)
+            const phenylBondLength = 1.40; // C-C in aromatic ring
+            const bridgeBondLength = data.bondLength; // C-X bond
+            const hexagonRadius = phenylBondLength;
+            
+            // Create central bridge atom
+            const bridgeGeometry = new THREE.SphereGeometry(0.3, 32, 32);
+            const bridgeMaterial = new THREE.MeshPhongMaterial({ color: data.bridgeColor });
+            const bridgeAtom = new THREE.Mesh(bridgeGeometry, bridgeMaterial);
+            molecule.add(bridgeAtom);
+            
+            // Add methyl groups for BPA
+            if (data.hasMethyl) {
+                const methylGeometry = new THREE.SphereGeometry(0.2, 32, 32);
+                const methylMaterial = new THREE.MeshPhongMaterial({ color: 0x95a5a6 });
+                
+                const methyl1 = new THREE.Mesh(methylGeometry, methylMaterial);
+                methyl1.position.set(0, 0.5, 0);
+                molecule.add(methyl1);
+                
+                const methyl2 = new THREE.Mesh(methylGeometry, methylMaterial);
+                methyl2.position.set(0, -0.5, 0);
+                molecule.add(methyl2);
+            }
+            
+            // Ring positioning approach
+            
+            // Ring 1:
+            const ring1Group = createPhenylRing(hexagonRadius);
+            
+            // Direction for ring 1 (opens by -halfBridgeAngle)
+            const dir1X = -Math.sin(halfBridgeAngle);
+            const dir1Y = -Math.cos(halfBridgeAngle);
+            
+            // Ring center position: bondLength + radius away from origin
+            ring1Group.position.set(
+                dir1X * (bridgeBondLength + hexagonRadius),
+                dir1Y * (bridgeBondLength + hexagonRadius),
+                0
+            );
+            
+            // Rotate ring to align with bond direction (stays in XY plane initially)
+            const angleToOrigin1 = Math.atan2(-dir1Y, -dir1X);
+            ring1Group.rotation.z = angleToOrigin1 - Math.PI / 2;
+            
+            // Apply CORRECT pitch rotation in OPPOSITE direction for ring 1
+            const pitchAngle1 = data.pitchAngles[0] * Math.PI / 180;
+            // Rotation axis: perpendicular to bond, in XY plane
+            const pitchAxis1 = new THREE.Vector3(-dir1Y, dir1X, 0).normalize();
+            ring1Group.rotateOnAxis(pitchAxis1, -pitchAngle1); // NEGATIVE for ring 1
+            
+            molecule.add(ring1Group);
+            
+            // Ring 2:
+            const ring2Group = createPhenylRing(hexagonRadius);
+            
+            // Direction for ring 2 (opens by +halfBridgeAngle)
+            const dir2X = -Math.sin(-halfBridgeAngle);
+            const dir2Y = -Math.cos(-halfBridgeAngle);
+            
+            // Ring center position
+            ring2Group.position.set(
+                dir2X * (bridgeBondLength + hexagonRadius),
+                dir2Y * (bridgeBondLength + hexagonRadius),
+                0
+            );
+            
+            // Rotate ring to align with bond direction (stays in XY plane initially)
+            const angleToOrigin2 = Math.atan2(-dir2Y, -dir2X);
+            ring2Group.rotation.z = angleToOrigin2 - Math.PI / 2;
+            
+            // Apply CORRECT pitch rotation in OPPOSITE direction for ring 2
+            const pitchAngle2 = data.pitchAngles[1] * Math.PI / 180;
+            // Rotation axis: perpendicular to bond, in XY plane
+            const pitchAxis2 = new THREE.Vector3(-dir2Y, dir2X, 0).normalize();
+            ring2Group.rotateOnAxis(pitchAxis2, pitchAngle2); // POSITIVE for ring 2
+            
+            molecule.add(ring2Group);
+            
+            // Create bonds - pointing in bond direction
+            const bondMaterial = new THREE.LineBasicMaterial({ color: 0xffffff, linewidth: 3 });
+            
+            // Bond 1 endpoint at bondLength distance
+            const bond1End = new THREE.Vector3(
+                dir1X * bridgeBondLength,
+                dir1Y * bridgeBondLength,
+                0
+            );
+            
+            const bond1Geometry = new THREE.BufferGeometry().setFromPoints([
+                new THREE.Vector3(0, 0, 0),
+                bond1End
+            ]);
+            molecule.add(new THREE.Line(bond1Geometry, bondMaterial));
+            
+            // Bond 2 endpoint
+            const bond2End = new THREE.Vector3(
+                dir2X * bridgeBondLength,
+                dir2Y * bridgeBondLength,
+                0
+            );
+            
+            const bond2Geometry = new THREE.BufferGeometry().setFromPoints([
+                new THREE.Vector3(0, 0, 0),
+                bond2End
+            ]);
+            molecule.add(new THREE.Line(bond2Geometry, bondMaterial));
+            
+            // Add reference plane if enabled
+            if (showPlanes) {
+                const refPlaneGeometry = new THREE.PlaneGeometry(10, 10);
+                const refPlaneMaterial = new THREE.MeshBasicMaterial({ 
+                    color: 0x1e3c72, 
+                    transparent: true, 
+                    opacity: 0.2,
+                    side: THREE.DoubleSide
+                });
+                const refPlane = new THREE.Mesh(refPlaneGeometry, refPlaneMaterial);
+                refPlane.rotation.x = Math.PI / 2;
+                molecule.add(refPlane);
+            }
+            
+            scene.add(molecule);
+            updateAngleInfo(data);
+        }
+        
+        // Create phenyl ring with correct dimensions
+        function createPhenylRing(radius) {
+            const ringGroup = new THREE.Group();
+            
+            // Hexagonal ring as cylinder (3D look)
+            const ringGeometry = new THREE.CylinderGeometry(radius, radius, 0.15, 6);
+            const ringMaterial = new THREE.MeshPhongMaterial({ color: 0x3498db });
+            const ring = new THREE.Mesh(ringGeometry, ringMaterial);
+            
+            // Rotate so ring is in XY plane with one vertex pointing down (-Y direction)
+            ring.rotation.x = Math.PI / 2;
+            // Default CylinderGeometry has vertices at 0°, 60°, 120°, etc around Y-axis
+            // After rotation.x, we want one vertex at -Y, so rotate by 90° around Z
+            ring.rotation.z = Math.PI / 2; // Now vertex points in -Y direction
+            
+            ringGroup.add(ring);
+            
+            return ringGroup;
+        }
+        
+        // Create angle visualization
+        function createAngleVisualization(compoundKey) {
+            if (moleculeAngle) {
+                sceneAngle.remove(moleculeAngle);
+            }
+            
+            moleculeAngle = new THREE.Group();
+            const data = compounds[compoundKey];
+            
+            const bridgeAngleRad = data.bridgeAngle * Math.PI / 180;
+            const halfBridgeAngle = bridgeAngleRad / 2;
+            const pitch1Rad = data.pitchAngles[0] * Math.PI / 180;
+            const pitch2Rad = data.pitchAngles[1] * Math.PI / 180;
+            
+            // Central point
+            const centerGeometry = new THREE.SphereGeometry(0.3, 32, 32);
+            const centerMaterial = new THREE.MeshPhongMaterial({ color: data.bridgeColor });
+            const center = new THREE.Mesh(centerGeometry, centerMaterial);
+            moleculeAngle.add(center);
+            
+            // Reference plane
+            const refPlaneGeometry = new THREE.PlaneGeometry(10, 10);
+            const refPlaneMaterial = new THREE.MeshBasicMaterial({ 
+                color: 0x1e3c72, 
+                transparent: true, 
+                opacity: 0.15,
+                side: THREE.DoubleSide
+            });
+            const refPlane = new THREE.Mesh(refPlaneGeometry, refPlaneMaterial);
+            refPlane.rotation.x = Math.PI / 2;
+            moleculeAngle.add(refPlane);
+            
+            // Ring positions (same as main viewer)
+            const armLength = 4;
+            const dir1X = -Math.sin(halfBridgeAngle);
+            const dir1Y = -Math.cos(halfBridgeAngle);
+            const dir2X = -Math.sin(-halfBridgeAngle);
+            const dir2Y = -Math.cos(-halfBridgeAngle);
+            
+            const ring1Pos = new THREE.Vector3(dir1X * armLength, dir1Y * armLength, 0);
+            const ring2Pos = new THREE.Vector3(dir2X * armLength, dir2Y * armLength, 0);
+            
+            // Bonds
+            const armMaterial = new THREE.LineBasicMaterial({ color: 0xcccccc, linewidth: 2 });
+            
+            const bond1Geometry = new THREE.BufferGeometry().setFromPoints([
+                new THREE.Vector3(0, 0, 0),
+                ring1Pos
+            ]);
+            moleculeAngle.add(new THREE.Line(bond1Geometry, armMaterial));
+            
+            const bond2Geometry = new THREE.BufferGeometry().setFromPoints([
+                new THREE.Vector3(0, 0, 0),
+                ring2Pos
+            ]);
+            moleculeAngle.add(new THREE.Line(bond2Geometry, armMaterial));
+            
+            // 1. BRIDGE ANGLE (red full circle)
+            const bridgeCircleRadius = 1.5;
+            const bridgeCirclePoints = [];
+            for (let i = 0; i <= 64; i++) {
+                const angle = (Math.PI * 2 * i) / 64;
+                bridgeCirclePoints.push(new THREE.Vector3(
+                    bridgeCircleRadius * Math.cos(angle),
+                    bridgeCircleRadius * Math.sin(angle),
+                    0
+                ));
+            }
+            const bridgeCircleGeometry = new THREE.BufferGeometry().setFromPoints(bridgeCirclePoints);
+            const bridgeCircleMaterial = new THREE.LineBasicMaterial({ color: 0xe74c3c, linewidth: 4 });
+            moleculeAngle.add(new THREE.Line(bridgeCircleGeometry, bridgeCircleMaterial));
+            
+            // Radial lines for bridge angle
+            const bridgeLineMaterial = new THREE.LineBasicMaterial({ color: 0xff6b6b, linewidth: 3 });
+            const bridgeLine1 = new THREE.BufferGeometry().setFromPoints([
+                new THREE.Vector3(0, 0, 0),
+                new THREE.Vector3(dir1X * bridgeCircleRadius, dir1Y * bridgeCircleRadius, 0)
+            ]);
+            moleculeAngle.add(new THREE.Line(bridgeLine1, bridgeLineMaterial));
+            
+            const bridgeLine2 = new THREE.BufferGeometry().setFromPoints([
+                new THREE.Vector3(0, 0, 0),
+                new THREE.Vector3(dir2X * bridgeCircleRadius, dir2Y * bridgeCircleRadius, 0)
+            ]);
+            moleculeAngle.add(new THREE.Line(bridgeLine2, bridgeLineMaterial));
+            
+            // 2. PITCH ANGLES (green circles) - rotation out of reference plane
+            const pitchCircleRadius = 2.0;
+            
+            // Pitch circle 1 - shows rotation out of XY plane (NEGATIVE direction)
+            const pitch1CirclePoints = [];
+            
+            // Pitch axis: perpendicular to bond, in XY plane
+            const pitchAxis1 = new THREE.Vector3(-dir1Y, dir1X, 0).normalize();
+            
+            // Create circle around this axis
+            const perpToPitch1 = new THREE.Vector3().crossVectors(pitchAxis1, new THREE.Vector3(0, 0, 1)).normalize();
+            const perpToPitch1b = new THREE.Vector3().crossVectors(pitchAxis1, perpToPitch1).normalize();
+            
+            for (let i = 0; i <= 64; i++) {
+                const angle = (Math.PI * 2 * i) / 64;
+                const localPoint = new THREE.Vector3();
+                localPoint.addScaledVector(perpToPitch1, pitchCircleRadius * Math.cos(angle));
+                localPoint.addScaledVector(perpToPitch1b, pitchCircleRadius * Math.sin(angle));
+                // Rotate by pitch angle (NEGATIVE for ring 1)
+                localPoint.applyAxisAngle(pitchAxis1, -pitch1Rad);
+                // Translate to ring position
+                localPoint.add(ring1Pos);
+                pitch1CirclePoints.push(localPoint);
+            }
+            const pitch1CircleGeometry = new THREE.BufferGeometry().setFromPoints(pitch1CirclePoints);
+            const pitch1CircleMaterial = new THREE.LineBasicMaterial({ color: 0x2ecc71, linewidth: 4 });
+            moleculeAngle.add(new THREE.Line(pitch1CircleGeometry, pitch1CircleMaterial));
+            
+            // Pitch circle 2 (POSITIVE direction)
+            const pitch2CirclePoints = [];
+            
+            const pitchAxis2 = new THREE.Vector3(-dir2Y, dir2X, 0).normalize();
+            
+            const perpToPitch2 = new THREE.Vector3().crossVectors(pitchAxis2, new THREE.Vector3(0, 0, 1)).normalize();
+            const perpToPitch2b = new THREE.Vector3().crossVectors(pitchAxis2, perpToPitch2).normalize();
+            
+            for (let i = 0; i <= 64; i++) {
+                const angle = (Math.PI * 2 * i) / 64;
+                const localPoint = new THREE.Vector3();
+                localPoint.addScaledVector(perpToPitch2, pitchCircleRadius * Math.cos(angle));
+                localPoint.addScaledVector(perpToPitch2b, pitchCircleRadius * Math.sin(angle));
+                // Rotate by pitch angle (POSITIVE for ring 2)
+                localPoint.applyAxisAngle(pitchAxis2, pitch2Rad);
+                // Translate to ring position
+                localPoint.add(ring2Pos);
+                pitch2CirclePoints.push(localPoint);
+            }
+            const pitch2CircleGeometry = new THREE.BufferGeometry().setFromPoints(pitch2CirclePoints);
+            const pitch2CircleMaterial = new THREE.LineBasicMaterial({ color: 0x27ae60, linewidth: 4 });
+            moleculeAngle.add(new THREE.Line(pitch2CircleGeometry, pitch2CircleMaterial));
+            
+            // 3. DIHEDRAL ANGLE (blue circle) - angle between the two ring planes
+            const dihedralCircleRadius = 2.8;
+            const dihedralAngleRad = data.dihedralAngle * Math.PI / 180;
+            
+            // The dihedral circle shows rotation from one ring plane to the other
+            // It should be perpendicular to the reference plane (XY plane)
+            // and show the twist between the two ring orientations
+            
+            const dihedralCirclePoints = [];
+            for (let i = 0; i <= 64; i++) {
+                const angle = (Math.PI * 2 * i) / 64;
+                // Create circle in YZ plane (perpendicular to X-axis)
+                const localY = dihedralCircleRadius * Math.cos(angle);
+                const localZ = dihedralCircleRadius * Math.sin(angle);
+                
+                // Rotate to align with the average orientation of the two rings
+                const avgRotation = (pitch1Rad + pitch2Rad) / 2;
+                
+                dihedralCirclePoints.push(new THREE.Vector3(
+                    0,
+                    localY * Math.cos(avgRotation) - localZ * Math.sin(avgRotation),
+                    localY * Math.sin(avgRotation) + localZ * Math.cos(avgRotation)
+                ));
+            }
+            const dihedralCircleGeometry = new THREE.BufferGeometry().setFromPoints(dihedralCirclePoints);
+            const dihedralCircleMaterial = new THREE.LineBasicMaterial({ color: 0x3498db, linewidth: 4 });
+            moleculeAngle.add(new THREE.Line(dihedralCircleGeometry, dihedralCircleMaterial));
+            
+            // Add indicator lines showing the two ring plane normals
+            const normalLength = 3;
+            const normalMaterial = new THREE.LineBasicMaterial({ color: 0x5dade2, linewidth: 2, transparent: true, opacity: 0.6 });
+            
+            // Normal 1 (perpendicular to ring 1 plane after pitch rotation) - NEGATIVE
+            const normal1 = new THREE.Vector3(0, 0, 1);
+            normal1.applyAxisAngle(pitchAxis1, -pitch1Rad);
+            const normal1Line = new THREE.BufferGeometry().setFromPoints([
+                new THREE.Vector3(0, 0, 0),
+                normal1.clone().multiplyScalar(normalLength)
+            ]);
+            moleculeAngle.add(new THREE.Line(normal1Line, normalMaterial));
+            
+            // Normal 2 (perpendicular to ring 2 plane after pitch rotation) - POSITIVE
+            const normal2 = new THREE.Vector3(0, 0, 1);
+            normal2.applyAxisAngle(pitchAxis2, pitch2Rad);
+            const normal2Line = new THREE.BufferGeometry().setFromPoints([
+                new THREE.Vector3(0, 0, 0),
+                normal2.clone().multiplyScalar(normalLength)
+            ]);
+            moleculeAngle.add(new THREE.Line(normal2Line, normalMaterial));
+            
+            // Ring plane indicators
+            const ringPlaneGeometry = new THREE.PlaneGeometry(2, 2.5);
+            const ringPlaneMaterial = new THREE.MeshBasicMaterial({ 
+                color: 0x3498db, 
+                transparent: true, 
+                opacity: 0.3,
+                side: THREE.DoubleSide
+            });
+            
+            const ringPlane1 = new THREE.Mesh(ringPlaneGeometry, ringPlaneMaterial);
+            ringPlane1.position.copy(ring1Pos);
+            // Align with ring direction
+            const angleToOrigin1 = Math.atan2(-dir1Y, -dir1X);
+            ringPlane1.rotation.z = angleToOrigin1 - Math.PI / 2;
+            // Apply pitch rotation (out of XY plane) - NEGATIVE for ring 1
+            ringPlane1.rotateOnAxis(pitchAxis1, -pitch1Rad);
+            moleculeAngle.add(ringPlane1);
+            
+            const ringPlane2 = new THREE.Mesh(ringPlaneGeometry, ringPlaneMaterial);
+            ringPlane2.position.copy(ring2Pos);
+            const angleToOrigin2 = Math.atan2(-dir2Y, -dir2X);
+            ringPlane2.rotation.z = angleToOrigin2 - Math.PI / 2;
+            // Apply pitch rotation - POSITIVE for ring 2
+            ringPlane2.rotateOnAxis(pitchAxis2, pitch2Rad);
+            moleculeAngle.add(ringPlane2);
+            
+            sceneAngle.add(moleculeAngle);
+        }
+        
+        // Update angle information
+        function updateAngleInfo(data) {
+            document.getElementById('bondLengthValue').textContent = data.bondLength.toFixed(3) + ' Å';
+            document.getElementById('bridgeAngleValue').textContent = data.bridgeAngle.toFixed(2) + '°';
+            document.getElementById('dihedralAngleValue').textContent = data.dihedralAngle.toFixed(2) + '°';
+            document.getElementById('pitchAngleValue').textContent = 
+                data.pitchAngles[0].toFixed(2) + '°, ' + data.pitchAngles[1].toFixed(2) + '°';
+        }
+        
+        // Animation loop
+        function animate() {
+            requestAnimationFrame(animate);
+            
+            if (molecule) {
+                molecule.rotation.y += 0.002;
+            }
+            if (moleculeAngle) {
+                moleculeAngle.rotation.y += 0.002;
+            }
+            
+            renderer.render(scene, camera);
+            rendererAngle.render(sceneAngle, cameraAngle);
+        }
+        
+        // Event listeners
+        document.getElementById('compoundSelect').addEventListener('change', (e) => {
+            currentCompound = e.target.value;
+            createMolecule(currentCompound);
+            createAngleVisualization(currentCompound);
+        });
+        
+        document.getElementById('viewSelect').addEventListener('change', (e) => {
+            const view = e.target.value;
+            
+            switch(view) {
+                case 'side':
+                    camera.position.set(0, 0, 15);
+                    cameraAngle.position.set(0, 0, 15);
+                    break;
+                case 'top':
+                    camera.position.set(0, 15, 0);
+                    cameraAngle.position.set(0, 15, 0);
+                    break;
+                case 'front':
+                    camera.position.set(15, 0, 0);
+                    cameraAngle.position.set(15, 0, 0);
+                    break;
+                default:
+                    camera.position.set(8, 5, 10);
+                    cameraAngle.position.set(8, 5, 10);
+            }
+            
+            camera.lookAt(0, 0, 0);
+            cameraAngle.lookAt(0, 0, 0);
+        });
+        
+        document.getElementById('togglePlanes').addEventListener('click', () => {
+            showPlanes = !showPlanes;
+            createMolecule(currentCompound);
+        });
+        
+        document.getElementById('resetView').addEventListener('click', () => {
+            camera.position.set(8, 5, 10);
+            camera.lookAt(0, 0, 0);
+            cameraAngle.position.set(8, 5, 10);
+            cameraAngle.lookAt(0, 0, 0);
+        });
+        
+        // Window resize
+        window.addEventListener('resize', () => {
+            const mainCanvas = document.getElementById('mainCanvas');
+            const angleCanvas = document.getElementById('angleCanvas');
+            
+            camera.aspect = mainCanvas.clientWidth / mainCanvas.clientHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(mainCanvas.clientWidth, mainCanvas.clientHeight);
+            
+            cameraAngle.aspect = angleCanvas.clientWidth / angleCanvas.clientHeight;
+            cameraAngle.updateProjectionMatrix();
+            rendererAngle.setSize(angleCanvas.clientWidth, angleCanvas.clientHeight);
+        });
+        
+        // Initialize
+        initMain();
+        initAngle();
+        animate();
+    </script>
+</body>
+</html>
